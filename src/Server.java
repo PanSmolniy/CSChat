@@ -1,28 +1,30 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.*;
 
 /**
  * Created by PC on 15.01.2016.
+ *
+ *
+ * Отлавливать дисконект
+ * Баг. Есть ячейка, но сервер видит ее только после повторного подключения.
  */
-public class Server extends Thread
+public class Server
 {
     ArrayList<Connection> connections = new ArrayList<>();
     int port = 1488;
     ServerSocket ss;
+    boolean hasSlots = true;
+
 
     final int messageAmount = 10;
 
     BlockingQueue<Message> messageList = new ArrayBlockingQueue<>(messageAmount);
 
     final int maxUsersConnected = 3;
-
-
-
 
     public Server()
     {
@@ -32,32 +34,34 @@ public class Server extends Thread
         try {
             ss = new ServerSocket(port);
 
+
             while (true)
             {
-                if (connections.size() < maxUsersConnected) {
+                if (hasSlots) {
                     Socket socket = ss.accept();
                     System.out.println("Ура! Какой-то хуедрыга подключился!");
 
                     Connection con = new Connection(socket);
                     connections.add(con);
+                    if (connections.size() == maxUsersConnected) hasSlots = false;
                     con.start();
                 } else
                 {
                     Socket socket = ss.accept();
                     System.out.println("Ура! Какой-то *** подключился, но к сожалению у нас нет для него места :(");
+
                     Connection con = new Connection(socket);
+
 
                     con.out.writeUTF("Извените, на сервере много народу");
 
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    con.in.readUTF();
+
                     con.socket.close();
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -85,7 +89,6 @@ public class Server extends Thread
                 oin = new ObjectInputStream(socket.getInputStream());
                 oout = new ObjectOutputStream(socket.getOutputStream());
 
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -100,6 +103,12 @@ public class Server extends Thread
                 out.writeUTF("Добро пожаловать на сервер " + clientName);
                 out.writeUTF(buildString(messageList));
 
+                for(Connection c : connections)
+                {
+                    message = new Message("Пользователь " + this.clientName + " присоединился к беседе");
+                    c.oout.writeObject(message);
+                }
+
                 while (true)
                 {
                     try {
@@ -109,8 +118,24 @@ public class Server extends Thread
                             messageList.poll();
                             messageList.add(message);
                         } else messageList.add(message);
-                    } catch (ClassNotFoundException e) {
+                    }
+
+                    catch (ClassNotFoundException e) {
                         e.printStackTrace();
+                    }
+                    catch (SocketException se) {
+                        connections.remove(this);
+                        hasSlots = true;
+                        /*
+                        Требуется подключиться 2 раза, чтобы появилось свободное место
+                         */
+                        System.out.println("Соединение разорвано. Пользователь " + this.clientName + " покидает беседу. " + connections.size());
+                        message = new Message("Пользователь " + this.clientName + " покинул беседу.");
+                        for(Connection c : connections)
+                        {
+                            c.oout.writeObject(message);
+                        }
+                        break;
                     }
 
                     for(Connection c : connections)
@@ -118,8 +143,8 @@ public class Server extends Thread
                         c.oout.writeObject(message);
                     }
                 }
-
-            } catch (IOException e)
+            }
+            catch (IOException e)
             {
                 e.printStackTrace();
             }

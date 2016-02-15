@@ -37,6 +37,7 @@ public class Client extends Thread
     @Override
     public void run()
     {
+
         try
         {
             InetAddress address = InetAddress.getByName(ip);
@@ -50,19 +51,19 @@ public class Client extends Thread
             oin = new ObjectInputStream(socket.getInputStream());
 
 
-                out.writeUTF(name);
+            out.writeUTF(name);
 
-                System.out.println(in.readUTF());
-                System.out.println(in.readUTF());
+            System.out.println(in.readUTF());
+            System.out.println(in.readUTF());
 
 
-                Listener listener = new Listener();
-                Thread listenerThread = new Thread(listener);
-                listenerThread.start();
+            Listener listener = new Listener();
+            Thread listenerThread = new Thread(listener);
+            listenerThread.start();
 
-                Writer writer = new Writer();
-                Thread writerThread = new Thread(writer);
-                writerThread.start();
+            Writer writer = new Writer();
+            Thread writerThread = new Thread(writer);
+            writerThread.start();
 
 
         } catch (IOException e)

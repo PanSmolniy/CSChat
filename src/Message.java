@@ -19,6 +19,11 @@ public class Message implements Serializable
         this.string = da + userName + ": " + string;
     }
 
+    public Message(String string)
+    {
+        this.string = sdf.format(new Date()) + string;
+    }
+
     @Override
     public String toString() {
         return string;
