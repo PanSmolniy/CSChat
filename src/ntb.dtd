@@ -1,0 +1,4 @@
+<!ELEMENT config (port, messege-amount, max-users-online)*>
+<!ELEMENT port (#PCDATA)>
+<!ELEMENT messege-amount (#PCDATA)>
+<!ELEMENT max-users-online (#PCDATA)>

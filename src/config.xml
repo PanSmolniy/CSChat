@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE config SYSTEM "ntb.dtd">
+<config>
+
+        <port>1488 </port>
+        <messege-amount> 10 </messege-amount>
+        <max-users-online> 10 </max-users-online>
+
+
+</config>
